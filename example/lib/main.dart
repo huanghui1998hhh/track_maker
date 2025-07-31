@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:track_maker/track_maker.dart';
 
-void main() {
+import 'wave.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final soloud = SoLoud.instance;
+  await soloud.init();
   runApp(const MyApp());
 }
 
@@ -26,9 +32,11 @@ class MyTrackItem extends TrackItem {
     required super.startOffset,
     required super.duration,
     required this.name,
+    required this.path,
   });
 
   final String name;
+  final String path;
 
   @override
   Widget build(BuildContext context) {
@@ -50,16 +58,15 @@ class MyTrackItem extends TrackItem {
                 clipBehavior: Clip.hardEdge,
                 child: Row(
                   spacing: 6,
-                  children: [
-                    _buildText('$name.mp4'),
-                    _buildText(duration.toSecondString()),
-                  ],
+                  children: [_buildText('$name.wav'), _buildText('$duration')],
                 ),
               ),
             ),
-            const ColoredBox(
-              color: Colors.red,
-              child: SizedBox(height: 20, width: double.infinity),
+            Expanded(
+              child: WaveView(
+                path: path,
+                paintMarkCount: duration.inMilliseconds ~/ 10,
+              ),
             ),
           ],
         ),
@@ -85,226 +92,68 @@ class MyTrackItem extends TrackItem {
   }
 }
 
-extension on Duration {
-  String toSecondString() {
-    var microseconds = inMicroseconds;
-    var sign = '';
-    final negative = microseconds < 0;
-
-    var hours = microseconds ~/ Duration.microsecondsPerHour;
-    microseconds = microseconds.remainder(Duration.microsecondsPerHour);
-
-    // Correcting for being negative after first division, instead of before,
-    // to avoid negating min-int, -(2^31-1), of a native int64.
-    if (negative) {
-      hours = 0 - hours; // Not using `-hours` to avoid creating -0.0 on web.
-      microseconds = 0 - microseconds;
-      sign = '-';
-    }
-
-    final hoursPadding = hours < 10 ? '0' : '';
-
-    final minutes = microseconds ~/ Duration.microsecondsPerMinute;
-    microseconds = microseconds.remainder(Duration.microsecondsPerMinute);
-
-    final minutesPadding = minutes < 10 ? '0' : '';
-
-    final seconds = microseconds ~/ Duration.microsecondsPerSecond;
-    microseconds = microseconds.remainder(Duration.microsecondsPerSecond);
-
-    final secondsPadding = seconds < 10 ? '0' : '';
-
-    final milliseconds_10 =
-        (microseconds * 10) ~/ Duration.microsecondsPerMillisecond;
-    final milliseconds10Padding = milliseconds_10 < 10 ? '0' : '';
-
-    return '$sign$hoursPadding$hours:'
-        '$minutesPadding$minutes:'
-        '$secondsPadding$seconds:'
-        '$milliseconds10Padding$milliseconds_10';
-  }
-}
-
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: TrackView(
         cacheExtent: 50,
         tracks: [
-          // 主背景音乐轨道
-          Track(
+          const Track(
+            height: 100,
             items: [
               MyTrackItem(
-                name: '背景音乐-主旋律',
                 startOffset: Duration.zero,
-                duration: Duration(seconds: 45),
-              ),
-              MyTrackItem(
-                name: '背景音乐-结尾',
-                startOffset: Duration(seconds: 50),
-                duration: Duration(seconds: 30),
+                duration: Duration(milliseconds: 10100),
+                name: 'Famous - Kanye West',
+                path: 'assets/samples-famous_86bpm.wav',
               ),
             ],
           ),
-
-          // 开场白音轨
-          Track(
+          const Track(
             items: [
               MyTrackItem(
-                name: '开场问候',
-                startOffset: Duration(milliseconds: 200),
-                duration: Duration(seconds: 8),
-              ),
-              MyTrackItem(
-                name: '主题介绍',
-                startOffset: Duration(seconds: 12),
-                duration: Duration(seconds: 15),
-              ),
-              MyTrackItem(
-                name: '总结回顾',
-                startOffset: Duration(seconds: 35),
-                duration: Duration(seconds: 6),
+                startOffset: Duration(seconds: 1),
+                duration: Duration(milliseconds: 3300),
+                name: 'Metro Boomin Tag',
+                path: 'assets/metro-boomin-tag_E_major.wav',
               ),
             ],
           ),
-
-          // 音效轨道
           Track(
-            items: [
-              MyTrackItem(
-                name: '鼓掌声',
-                startOffset: Duration(seconds: 8),
-                duration: Duration(milliseconds: 800),
+            items: List.generate(
+              20,
+              (index) => MyTrackItem(
+                name: 'rim shot',
+                path: 'assets/dry-rim-shot.wav',
+                startOffset: Duration(milliseconds: (index * 500) + 200),
+                duration: const Duration(milliseconds: 300),
               ),
-              MyTrackItem(
-                name: '鼓掌声',
-                startOffset: Duration(milliseconds: 8800),
-                duration: Duration(milliseconds: 800),
-              ),
-              MyTrackItem(
-                name: '鼓掌声',
-                startOffset: Duration(milliseconds: 9600),
-                duration: Duration(milliseconds: 800),
-              ),
-              MyTrackItem(
-                name: '钟声',
-                startOffset: Duration(seconds: 27),
-                duration: Duration(milliseconds: 1200),
-              ),
-              MyTrackItem(
-                name: '按键音',
-                startOffset: Duration(seconds: 41),
-                duration: Duration(milliseconds: 500),
-              ),
-              MyTrackItem(
-                name: '结束铃声',
-                startOffset: Duration(seconds: 55),
-                duration: Duration(milliseconds: 900),
-              ),
-            ],
+            ),
           ),
-
-          // 采访音轨
           Track(
-            items: [
-              MyTrackItem(
-                name: '嘉宾自我介绍',
-                startOffset: Duration(seconds: 15),
-                duration: Duration(seconds: 4),
+            items: List.generate(
+              20,
+              (index) => MyTrackItem(
+                name: 'hi-hat',
+                path: 'assets/short-drum-nice-hi-hat.wav',
+                startOffset: Duration(milliseconds: index * 500),
+                duration: const Duration(milliseconds: 400),
               ),
-              MyTrackItem(
-                name: '专业观点分享',
-                startOffset: Duration(seconds: 22),
-                duration: Duration(seconds: 7),
-              ),
-              MyTrackItem(
-                name: '经验总结',
-                startOffset: Duration(seconds: 32),
-                duration: Duration(seconds: 9),
-              ),
-            ],
+            ),
           ),
-
-          // 环境声轨道
           Track(
-            items: [
-              MyTrackItem(
-                name: '办公室环境音',
-                startOffset: Duration(seconds: 10),
-                duration: Duration(seconds: 25),
+            items: List.generate(
+              20,
+              (index) => MyTrackItem(
+                name: 'hi-hat',
+                path: 'assets/short-drum-nice-hi-hat.wav',
+                startOffset: Duration(milliseconds: (index * 500) + 400),
+                duration: const Duration(milliseconds: 300),
               ),
-              MyTrackItem(
-                name: '咖啡厅环境音',
-                startOffset: Duration(seconds: 42),
-                duration: Duration(seconds: 20),
-              ),
-            ],
-          ),
-
-          // 片头音乐
-          Track(
-            items: [
-              MyTrackItem(
-                name: '片头主题音乐',
-                startOffset: Duration(milliseconds: 50),
-                duration: Duration(seconds: 3),
-              ),
-            ],
-          ),
-
-          // 旁白音轨
-          Track(
-            items: [
-              MyTrackItem(
-                name: '节目介绍',
-                startOffset: Duration(seconds: 5),
-                duration: Duration(seconds: 2),
-              ),
-              MyTrackItem(
-                name: '背景说明',
-                startOffset: Duration(seconds: 18),
-                duration: Duration(seconds: 3),
-              ),
-              MyTrackItem(
-                name: '过渡解说',
-                startOffset: Duration(seconds: 29),
-                duration: Duration(seconds: 2),
-              ),
-              MyTrackItem(
-                name: '结尾致谢',
-                startOffset: Duration(seconds: 43),
-                duration: Duration(seconds: 4),
-              ),
-            ],
-          ),
-
-          // 转场音效
-          Track(
-            items: [
-              MyTrackItem(
-                name: '淡入音效',
-                startOffset: Duration(seconds: 7),
-                duration: Duration(milliseconds: 300),
-              ),
-              MyTrackItem(
-                name: '切换音效',
-                startOffset: Duration(seconds: 21),
-                duration: Duration(milliseconds: 600),
-              ),
-              MyTrackItem(
-                name: '过渡音效',
-                startOffset: Duration(seconds: 31),
-                duration: Duration(milliseconds: 400),
-              ),
-              MyTrackItem(
-                name: '淡出音效',
-                startOffset: Duration(seconds: 47),
-                duration: Duration(milliseconds: 700),
-              ),
-            ],
+            ),
           ),
         ],
       ),

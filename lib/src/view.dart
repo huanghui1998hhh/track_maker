@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -27,6 +28,7 @@ class _TrackViewState extends State<TrackView> {
   TrackController? _controller;
 
   double scaleRatio = 10;
+  late double hookScale;
 
   @override
   void initState() {
@@ -55,25 +57,39 @@ class _TrackViewState extends State<TrackView> {
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      onPointerSignal: (event) {
-        if (event is! PointerScaleEvent) return;
-        scaleRatio /= event.scale;
-        setState(() {});
-      },
-      child: _TrackView(
-        verticalAlignment: widget.verticalAlignment,
-        scaleRatio: scaleRatio,
-        tracksData: widget.tracks,
-        cacheExtent: widget.cacheExtent,
-        nodeBuilder: (context, vicinity) {
-          final trackItem =
-              widget.tracks[vicinity.yIndex].items[vicinity.xIndex];
+    final content = _TrackView(
+      verticalAlignment: widget.verticalAlignment,
+      scaleRatio: scaleRatio,
+      tracksData: widget.tracks,
+      cacheExtent: widget.cacheExtent,
+      nodeBuilder: (context, vicinity) {
+        final trackItem = widget.tracks[vicinity.yIndex].items[vicinity.xIndex];
 
-          return trackItem.build(context);
-        },
-      ),
+        return trackItem.build(context);
+      },
     );
+
+    if (kIsWeb) {
+      return Listener(
+        onPointerSignal: (event) {
+          if (event is! PointerScaleEvent) return;
+          scaleRatio /= event.scale;
+          setState(() {});
+        },
+        child: content,
+      );
+    } else {
+      return GestureDetector(
+        onScaleStart: (details) {
+          hookScale = scaleRatio;
+        },
+        onScaleUpdate: (details) {
+          scaleRatio = hookScale / details.scale;
+          setState(() {});
+        },
+        child: content,
+      );
+    }
   }
 }
 

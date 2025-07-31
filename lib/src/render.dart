@@ -24,7 +24,7 @@ class RenderTrackViewport extends RenderTwoDimensionalViewport
        _verticalAlignment = verticalAlignment,
        super(mainAxis: Axis.horizontal);
 
-  final Map<int, _Span> _rowMetrics = <int, _Span>{};
+  final Map<int, _RowSpan> _rowMetrics = <int, _RowSpan>{};
   int? _firstNonPinnedRow;
   int? _lastNonPinnedRow;
 
@@ -159,8 +159,8 @@ class RenderTrackViewport extends RenderTwoDimensionalViewport
 
     while (row != tracksData.length) {
       final double leadingOffset = startOfRegularRow;
-      _Span? span = _rowMetrics.remove(row);
-      span ??= _Span();
+      _RowSpan? span = _rowMetrics.remove(row);
+      span ??= _RowSpan();
       span.update(leadingOffset: leadingOffset, extent: tracksData[row].height);
       _rowMetrics[row] = span;
       if (span.trailingOffset >= targetLeadingRowPixel &&
@@ -224,7 +224,7 @@ class TrackItemDelegate extends TwoDimensionalChildBuilderDelegate {
   }) : super(builder: nodeBuilder);
 }
 
-class _Span {
+class _RowSpan {
   double get leadingOffset => _leadingOffset;
   late double _leadingOffset;
 
